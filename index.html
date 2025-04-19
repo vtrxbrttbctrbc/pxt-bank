@@ -2,185 +2,192 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PXT Investimento</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <title>PXT Investimentos - Cadastro</title>
   <style>
     body {
-      margin: 0;
-      font-family: 'Inter', sans-serif;
-      background: #000;
+      background-color: #000;
       color: #fff;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
-    .container {
-      display: flex;
-      max-width: 900px;
-      width: 100%;
-      height: 600px;
-      background: #111;
-      border-radius: 16px;
-      overflow: hidden;
-      box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
-    }
-    .side-image {
-      width: 50%;
-      background: url('https://images.unsplash.com/photo-1605902711622-cfb43c44367f') no-repeat center center;
-      background-size: cover;
-    }
-    .form-area {
-      width: 50%;
-      padding: 40px;
+      font-family: Arial, sans-serif;
       display: flex;
       flex-direction: column;
+      align-items: center;
       justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+    }
+    .container {
+      width: 100%;
+      max-width: 400px;
+      padding: 20px;
+      background-color: #111;
+      border-radius: 12px;
+      box-shadow: 0 0 20px #222;
     }
     input, button {
       width: 100%;
-      padding: 12px;
       margin: 10px 0;
+      padding: 12px;
+      font-size: 16px;
       border: none;
-      border-radius: 8px;
+      border-radius: 6px;
     }
     input {
-      background: #222;
+      background-color: #222;
       color: #fff;
-      font-size: 1rem;
     }
     button {
-      background: #fff;
+      background-color: #0f0;
       color: #000;
-      font-weight: bold;
-      transition: 0.3s;
+      cursor: pointer;
     }
-    button:hover {
-      background: #e6e6e6;
+    #app {
+      display: none;
     }
-    .hidden { display: none; }
-    .saldo {
-      font-size: 1.3em;
-      margin: 15px 0;
-    }
-    h2 {
-      margin-bottom: 10px;
-    }
-    #mensagem {
-      margin-top: 10px;
-      font-size: 0.9rem;
-      color: #7fffd4;
-    }
-    @media (max-width: 768px) {
-      .container {
-        flex-direction: column;
-        height: auto;
-      }
-      .side-image {
-        display: none;
-      }
-      .form-area {
-        width: 100%;
-        padding: 30px 20px;
-      }
+    .config-btn {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: #444;
+      padding: 8px 12px;
+      border-radius: 6px;
+      cursor: pointer;
     }
   </style>
 </head>
 <body>
-<div class="container">
-  <div class="side-image"></div>
-  <div class="form-area">
-    <!-- Tela de cadastro -->
-    <div id="cadastro">
-      <h2>PXT Investimento</h2>
-      <p>Crie sua conta bancária</p>
-      <input type="text" id="nome" placeholder="Nome completo" required>
-      <input type="tel" id="telefone" placeholder="Telefone" required>
-      <button onclick="criarConta()">Criar Conta</button>
-    </div>
 
-    <!-- Tela da conta -->
-    <div id="conta" class="hidden">
-      <h2>Bem-vindo, <span id="userNome"></span></h2>
-      <p class="saldo">Saldo: <span id="saldo"></span> PXT</p>
-      <input type="text" id="destinatario" placeholder="Nome completo do destinatário">
-      <input type="number" id="valor" placeholder="Valor a enviar">
-      <button onclick="fazerPagamento()">Enviar</button>
-      <button onclick="sair()">Sair</button>
-      <div id="mensagem"></div>
-    </div>
-  </div>
+<div id="cadastro" class="container">
+  <h2>Cadastro - PXT Investimentos</h2>
+  <input type="text" id="nome" placeholder="Nome completo">
+  <input type="text" id="telefone" placeholder="Telefone">
+  <button onclick="criarConta()">Criar</button>
+</div>
+
+<div id="app" class="container">
+  <div class="config-btn" onclick="abrirConfiguracoes()">⚙️</div>
+  <h2>Bem-vindo à sua conta</h2>
+  <p><strong>Saldo:</strong> <span id="saldo">0</span> PXT-Coin</p>
+  <p><strong>Sua chave de pagamento:</strong></p>
+  <p id="chavePix" style="word-break: break-all;"></p>
+  <h3>Fazer pagamento</h3>
+  <input type="text" id="chaveDestino" placeholder="Chave de pagamento do destinatário">
+  <input type="number" id="valor" placeholder="Valor a enviar">
+  <button onclick="pagar()">Enviar</button>
+</div>
+
+<div id="configuracoes" class="container" style="display:none;">
+  <h2>Configurações</h2>
+  <button onclick="voltar()">Voltar</button>
+  <button onclick="mudarNome()">Mudar nome (a cada 7 dias)</button>
+  <button onclick="excluirConta()">Excluir conta</button>
 </div>
 
 <script>
-  let contas = JSON.parse(localStorage.getItem('contas')) || {};
-  let usuarioAtual = null;
+  let usuarios = JSON.parse(localStorage.getItem('usuarios') || '{}');
+  let usuarioAtual = JSON.parse(localStorage.getItem('usuarioAtual') || 'null');
+
+  function gerarChave() {
+    return 'pxt-' + Math.random().toString(36).substring(2, 10) + Date.now();
+  }
 
   function criarConta() {
     const nome = document.getElementById('nome').value.trim();
     const telefone = document.getElementById('telefone').value.trim();
 
-    if (!nome || !telefone) return alert('Preencha todos os campos.');
+    if (!nome || !telefone) return alert('Preencha todos os campos');
+    if (usuarios[nome]) return alert('Esse nome já está em uso');
 
-    if (contas[nome]) return alert('Conta já existe com esse nome.');
-
-    contas[nome] = {
-      telefone: telefone,
-      saldo: 100
+    const chave = gerarChave();
+    const novoUsuario = {
+      nome,
+      telefone,
+      chave,
+      saldo: 1,
+      ultimaMudancaNome: Date.now()
     };
-    localStorage.setItem('contas', JSON.stringify(contas));
-    usuarioAtual = nome;
-    mostrarConta();
+
+    usuarios[nome] = novoUsuario;
+    localStorage.setItem('usuarios', JSON.stringify(usuarios));
+
+    localStorage.setItem('usuarioAtualNome', nome);
+    mostrarApp();
   }
 
-  function mostrarConta() {
-    document.getElementById('cadastro').classList.add('hidden');
-    document.getElementById('conta').classList.remove('hidden');
-    document.getElementById('userNome').innerText = usuarioAtual;
-    atualizarSaldo();
+  function mostrarApp() {
+    const nome = localStorage.getItem('usuarioAtualNome');
+    if (!nome || !usuarios[nome]) return;
+
+    usuarioAtual = usuarios[nome];
+    document.getElementById('cadastro').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    document.getElementById('saldo').innerText = usuarioAtual.saldo.toFixed(2);
+    document.getElementById('chavePix').innerText = usuarioAtual.chave;
   }
 
-  function atualizarSaldo() {
-    const saldo = contas[usuarioAtual].saldo;
-    document.getElementById('saldo').innerText = saldo;
-  }
-
-  function fazerPagamento() {
-    const destinatario = document.getElementById('destinatario').value.trim();
+  function pagar() {
+    const chave = document.getElementById('chaveDestino').value.trim();
     const valor = parseFloat(document.getElementById('valor').value);
-    const mensagem = document.getElementById('mensagem');
 
-    if (!destinatario || isNaN(valor) || valor <= 0) {
-      mensagem.innerText = 'Preencha os campos corretamente.';
-      return;
+    if (!chave || isNaN(valor) || valor <= 0) return alert('Dados inválidos');
+    if (valor > usuarioAtual.saldo) return alert('Saldo insuficiente');
+
+    let destinoNome = null;
+    for (const nome in usuarios) {
+      if (usuarios[nome].chave === chave) {
+        destinoNome = nome;
+        break;
+      }
     }
 
-    if (!contas[destinatario]) {
-      mensagem.innerText = 'Destinatário não encontrado.';
-      return;
-    }
+    if (!destinoNome) return alert('Chave de pagamento incorreta');
 
-    if (contas[usuarioAtual].saldo < valor) {
-      mensagem.innerText = 'Saldo insuficiente.';
-      return;
-    }
+    usuarios[destinoNome].saldo += valor;
+    usuarios[usuarioAtual.nome].saldo -= valor;
 
-    contas[usuarioAtual].saldo -= valor;
-    contas[destinatario].saldo += valor;
-    localStorage.setItem('contas', JSON.stringify(contas));
-    mensagem.innerText = `Você enviou ${valor} PXT para ${destinatario}`;
-    atualizarSaldo();
+    localStorage.setItem('usuarios', JSON.stringify(usuarios));
+    mostrarApp();
+    alert('Pagamento realizado com sucesso');
   }
 
-  function sair() {
-    usuarioAtual = null;
-    document.getElementById('cadastro').classList.remove('hidden');
-    document.getElementById('conta').classList.add('hidden');
-    document.getElementById('nome').value = '';
-    document.getElementById('telefone').value = '';
-    document.getElementById('mensagem').innerText = '';
+  function abrirConfiguracoes() {
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('configuracoes').style.display = 'block';
   }
+
+  function voltar() {
+    document.getElementById('configuracoes').style.display = 'none';
+    mostrarApp();
+  }
+
+  function mudarNome() {
+    const novoNome = prompt('Novo nome completo:').trim();
+    const agora = Date.now();
+
+    if (!novoNome) return alert('Nome inválido');
+    if (usuarios[novoNome]) return alert('Nome já está em uso');
+    if (agora - usuarioAtual.ultimaMudancaNome < 7 * 24 * 60 * 60 * 1000) return alert('Você só pode mudar de nome a cada 7 dias');
+
+    delete usuarios[usuarioAtual.nome];
+    usuarioAtual.nome = novoNome;
+    usuarioAtual.ultimaMudancaNome = agora;
+    usuarios[novoNome] = usuarioAtual;
+
+    localStorage.setItem('usuarios', JSON.stringify(usuarios));
+    localStorage.setItem('usuarioAtualNome', novoNome);
+    alert('Nome alterado com sucesso');
+    mostrarApp();
+  }
+
+  function excluirConta() {
+    if (!confirm('Tem certeza? Isso apagará sua conta.')) return;
+    delete usuarios[usuarioAtual.nome];
+    localStorage.removeItem('usuarioAtualNome');
+    localStorage.setItem('usuarios', JSON.stringify(usuarios));
+    location.reload();
+  }
+
+  if (localStorage.getItem('usuarioAtualNome')) mostrarApp();
 </script>
+
 </body>
 </html>
