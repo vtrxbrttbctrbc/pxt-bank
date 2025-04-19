@@ -1,193 +1,216 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
-  <meta charset="UTF-8">
-  <title>PXT Investimentos - Cadastro</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PXT Investimentos</title>
   <style>
     body {
-      background-color: #000;
-      color: #fff;
-      font-family: Arial, sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
       margin: 0;
+      background: #000;
+      font-family: 'Segoe UI', sans-serif;
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
     }
     .container {
       width: 100%;
       max-width: 400px;
       padding: 20px;
-      background-color: #111;
-      border-radius: 12px;
-      box-shadow: 0 0 20px #222;
+      box-sizing: border-box;
+    }
+    h1 {
+      text-align: center;
+      font-size: 28px;
     }
     input, button {
       width: 100%;
-      margin: 10px 0;
       padding: 12px;
-      font-size: 16px;
+      margin: 10px 0;
       border: none;
-      border-radius: 6px;
+      border-radius: 10px;
+      font-size: 16px;
     }
     input {
-      background-color: #222;
-      color: #fff;
+      background: #111;
+      color: white;
     }
     button {
-      background-color: #0f0;
-      color: #000;
+      background: #fff;
+      color: black;
       cursor: pointer;
     }
-    #app {
+    .section {
       display: none;
     }
-    .config-btn {
+    .top-right {
       position: absolute;
       top: 20px;
       right: 20px;
-      background: #444;
-      padding: 8px 12px;
-      border-radius: 6px;
-      cursor: pointer;
+    }
+    .config-page {
+      text-align: center;
+    }
+    .info {
+      text-align: center;
+      margin-top: 20px;
     }
   </style>
 </head>
 <body>
+  <div class="container">
+    <div id="cadastro" class="section" style="display: block;">
+      <h1>Cadastro</h1>
+      <input type="text" id="nome" placeholder="Nome completo" required />
+      <input type="tel" id="telefone" placeholder="Número de telefone" required />
+      <button onclick="cadastrar()">Criar Conta</button>
+    </div>
 
-<div id="cadastro" class="container">
-  <h2>Cadastro - PXT Investimentos</h2>
-  <input type="text" id="nome" placeholder="Nome completo">
-  <input type="text" id="telefone" placeholder="Telefone">
-  <button onclick="criarConta()">Criar</button>
-</div>
+    <div id="home" class="section">
+      <div class="top-right">
+        <button onclick="abrirConfiguracoes()">⚙️</button>
+      </div>
+      <h1>Bem-vindo, <span id="userNome"></span></h1>
+      <div class="info">
+        <p><strong>Saldo:</strong> <span id="saldo">0</span> PXT Coin</p>
+        <p><strong>Sua chave de pagamento:</strong><br><code id="chavePix"></code></p>
+      </div>
+      <hr />
+      <input type="text" id="destinoChave" placeholder="Chave de pagamento do destinatário" />
+      <input type="number" id="valor" placeholder="Valor a enviar" />
+      <button onclick="pagar()">Enviar Pagamento</button>
+    </div>
 
-<div id="app" class="container">
-  <div class="config-btn" onclick="abrirConfiguracoes()">⚙️</div>
-  <h2>Bem-vindo à sua conta</h2>
-  <p><strong>Saldo:</strong> <span id="saldo">0</span> PXT-Coin</p>
-  <p><strong>Sua chave de pagamento:</strong></p>
-  <p id="chavePix" style="word-break: break-all;"></p>
-  <h3>Fazer pagamento</h3>
-  <input type="text" id="chaveDestino" placeholder="Chave de pagamento do destinatário">
-  <input type="number" id="valor" placeholder="Valor a enviar">
-  <button onclick="pagar()">Enviar</button>
-</div>
+    <div id="config" class="section">
+      <div class="top-right">
+        <button onclick="voltarHome()">⬅️</button>
+      </div>
+      <h1>Configurações</h1>
+      <div class="config-page">
+        <button onclick="mudarNome()">Mudar Nome</button>
+        <button onclick="excluirConta()">Excluir Conta</button>
+      </div>
+    </div>
+  </div>
 
-<div id="configuracoes" class="container" style="display:none;">
-  <h2>Configurações</h2>
-  <button onclick="voltar()">Voltar</button>
-  <button onclick="mudarNome()">Mudar nome (a cada 7 dias)</button>
-  <button onclick="excluirConta()">Excluir conta</button>
-</div>
+  <script>
+    const usuarios = JSON.parse(localStorage.getItem("usuarios") || "{}");
+    let usuarioAtual = JSON.parse(localStorage.getItem("usuarioAtual") || "null");
 
-<script>
-  let usuarios = JSON.parse(localStorage.getItem('usuarios') || '{}');
-  let usuarioAtual = JSON.parse(localStorage.getItem('usuarioAtual') || 'null');
+    function gerarChave() {
+      return 'pxt-' + Math.random().toString(36).substr(2, 9);
+    }
 
-  function gerarChave() {
-    return 'pxt-' + Math.random().toString(36).substring(2, 10) + Date.now();
-  }
+    function cadastrar() {
+      const nome = document.getElementById("nome").value.trim();
+      const telefone = document.getElementById("telefone").value.trim();
 
-  function criarConta() {
-    const nome = document.getElementById('nome').value.trim();
-    const telefone = document.getElementById('telefone').value.trim();
+      if (!nome || !telefone) return alert("Preencha todos os campos.");
+      if (usuarios[nome]) return alert("Esse nome já está cadastrado. Use outro.");
 
-    if (!nome || !telefone) return alert('Preencha todos os campos');
-    if (usuarios[nome]) return alert('Esse nome já está em uso');
+      const chave = gerarChave();
+      usuarios[nome] = {
+        nome,
+        telefone,
+        chave,
+        saldo: 1,
+        ultimaMudancaNome: Date.now()
+      };
+      usuarioAtual = usuarios[nome];
 
-    const chave = gerarChave();
-    const novoUsuario = {
-      nome,
-      telefone,
-      chave,
-      saldo: 1,
-      ultimaMudancaNome: Date.now()
-    };
+      localStorage.setItem("usuarios", JSON.stringify(usuarios));
+      localStorage.setItem("usuarioAtual", JSON.stringify(usuarioAtual));
 
-    usuarios[nome] = novoUsuario;
-    localStorage.setItem('usuarios', JSON.stringify(usuarios));
+      mostrarHome();
+    }
 
-    localStorage.setItem('usuarioAtualNome', nome);
-    mostrarApp();
-  }
+    function mostrarHome() {
+      document.getElementById("cadastro").style.display = "none";
+      document.getElementById("home").style.display = "block";
+      document.getElementById("config").style.display = "none";
 
-  function mostrarApp() {
-    const nome = localStorage.getItem('usuarioAtualNome');
-    if (!nome || !usuarios[nome]) return;
+      document.getElementById("userNome").textContent = usuarioAtual.nome;
+      document.getElementById("saldo").textContent = usuarioAtual.saldo.toFixed(2);
+      document.getElementById("chavePix").textContent = usuarioAtual.chave;
+    }
 
-    usuarioAtual = usuarios[nome];
-    document.getElementById('cadastro').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
-    document.getElementById('saldo').innerText = usuarioAtual.saldo.toFixed(2);
-    document.getElementById('chavePix').innerText = usuarioAtual.chave;
-  }
+    function pagar() {
+      const chave = document.getElementById("destinoChave").value.trim();
+      const valor = parseFloat(document.getElementById("valor").value);
 
-  function pagar() {
-    const chave = document.getElementById('chaveDestino').value.trim();
-    const valor = parseFloat(document.getElementById('valor').value);
+      if (!chave || isNaN(valor) || valor <= 0) return alert("Dados inválidos.");
 
-    if (!chave || isNaN(valor) || valor <= 0) return alert('Dados inválidos');
-    if (valor > usuarioAtual.saldo) return alert('Saldo insuficiente');
+      let destino = null;
+      for (const nome in usuarios) {
+        if (usuarios[nome].chave === chave) {
+          destino = usuarios[nome];
+          break;
+        }
+      }
 
-    let destinoNome = null;
-    for (const nome in usuarios) {
-      if (usuarios[nome].chave === chave) {
-        destinoNome = nome;
-        break;
+      if (!destino) return alert("Chave de pagamento incorreta.");
+      if (usuarioAtual.chave === chave) return alert("Você não pode pagar a si mesmo.");
+      if (usuarioAtual.saldo < valor) return alert("Saldo insuficiente.");
+
+      usuarioAtual.saldo -= valor;
+      destino.saldo += valor;
+
+      usuarios[usuarioAtual.nome] = usuarioAtual;
+      usuarios[destino.nome] = destino;
+
+      localStorage.setItem("usuarios", JSON.stringify(usuarios));
+      localStorage.setItem("usuarioAtual", JSON.stringify(usuarioAtual));
+
+      mostrarHome();
+      alert("Pagamento realizado com sucesso!");
+    }
+
+    function abrirConfiguracoes() {
+      document.getElementById("cadastro").style.display = "none";
+      document.getElementById("home").style.display = "none";
+      document.getElementById("config").style.display = "block";
+    }
+
+    function voltarHome() {
+      mostrarHome();
+    }
+
+    function mudarNome() {
+      const novoNome = prompt("Digite o novo nome:");
+      if (!novoNome || usuarios[novoNome]) return alert("Nome inválido ou já usado.");
+      const agora = Date.now();
+      const seteDias = 7 * 24 * 60 * 60 * 1000;
+
+      if (agora - usuarioAtual.ultimaMudancaNome < seteDias) {
+        return alert("Você só pode mudar de nome a cada 7 dias.");
+      }
+
+      delete usuarios[usuarioAtual.nome];
+      usuarioAtual.nome = novoNome;
+      usuarioAtual.ultimaMudancaNome = agora;
+      usuarios[novoNome] = usuarioAtual;
+
+      localStorage.setItem("usuarios", JSON.stringify(usuarios));
+      localStorage.setItem("usuarioAtual", JSON.stringify(usuarioAtual));
+
+      alert("Nome alterado com sucesso!");
+      mostrarHome();
+    }
+
+    function excluirConta() {
+      if (confirm("Tem certeza que deseja excluir sua conta?")) {
+        delete usuarios[usuarioAtual.nome];
+        localStorage.removeItem("usuarioAtual");
+        localStorage.setItem("usuarios", JSON.stringify(usuarios));
+        location.reload();
       }
     }
 
-    if (!destinoNome) return alert('Chave de pagamento incorreta');
-
-    usuarios[destinoNome].saldo += valor;
-    usuarios[usuarioAtual.nome].saldo -= valor;
-
-    localStorage.setItem('usuarios', JSON.stringify(usuarios));
-    mostrarApp();
-    alert('Pagamento realizado com sucesso');
-  }
-
-  function abrirConfiguracoes() {
-    document.getElementById('app').style.display = 'none';
-    document.getElementById('configuracoes').style.display = 'block';
-  }
-
-  function voltar() {
-    document.getElementById('configuracoes').style.display = 'none';
-    mostrarApp();
-  }
-
-  function mudarNome() {
-    const novoNome = prompt('Novo nome completo:').trim();
-    const agora = Date.now();
-
-    if (!novoNome) return alert('Nome inválido');
-    if (usuarios[novoNome]) return alert('Nome já está em uso');
-    if (agora - usuarioAtual.ultimaMudancaNome < 7 * 24 * 60 * 60 * 1000) return alert('Você só pode mudar de nome a cada 7 dias');
-
-    delete usuarios[usuarioAtual.nome];
-    usuarioAtual.nome = novoNome;
-    usuarioAtual.ultimaMudancaNome = agora;
-    usuarios[novoNome] = usuarioAtual;
-
-    localStorage.setItem('usuarios', JSON.stringify(usuarios));
-    localStorage.setItem('usuarioAtualNome', novoNome);
-    alert('Nome alterado com sucesso');
-    mostrarApp();
-  }
-
-  function excluirConta() {
-    if (!confirm('Tem certeza? Isso apagará sua conta.')) return;
-    delete usuarios[usuarioAtual.nome];
-    localStorage.removeItem('usuarioAtualNome');
-    localStorage.setItem('usuarios', JSON.stringify(usuarios));
-    location.reload();
-  }
-
-  if (localStorage.getItem('usuarioAtualNome')) mostrarApp();
-</script>
-
+    if (usuarioAtual) {
+      mostrarHome();
+    }
+  </script>
 </body>
 </html>
