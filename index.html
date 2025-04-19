@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PXT Investimento</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background: #000;
+      color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .container {
+      display: flex;
+      max-width: 900px;
+      width: 100%;
+      height: 600px;
+      background: #111;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+    }
+    .side-image {
+      width: 50%;
+      background: url('https://images.unsplash.com/photo-1605902711622-cfb43c44367f') no-repeat center center;
+      background-size: cover;
+    }
+    .form-area {
+      width: 50%;
+      padding: 40px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    input, button {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border: none;
+      border-radius: 8px;
+    }
+    input {
+      background: #222;
+      color: #fff;
+      font-size: 1rem;
+    }
+    button {
+      background: #fff;
+      color: #000;
+      font-weight: bold;
+      transition: 0.3s;
+    }
+    button:hover {
+      background: #e6e6e6;
+    }
+    .hidden { display: none; }
+    .saldo {
+      font-size: 1.3em;
+      margin: 15px 0;
+    }
+    h2 {
+      margin-bottom: 10px;
+    }
+    #mensagem {
+      margin-top: 10px;
+      font-size: 0.9rem;
+      color: #7fffd4;
+    }
+    @media (max-width: 768px) {
+      .container {
+        flex-direction: column;
+        height: auto;
+      }
+      .side-image {
+        display: none;
+      }
+      .form-area {
+        width: 100%;
+        padding: 30px 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="side-image"></div>
+  <div class="form-area">
+    <!-- Tela de cadastro -->
+    <div id="cadastro">
+      <h2>PXT Investimento</h2>
+      <p>Crie sua conta bancária</p>
+      <input type="text" id="nome" placeholder="Nome completo" required>
+      <input type="tel" id="telefone" placeholder="Telefone" required>
+      <button onclick="criarConta()">Criar Conta</button>
+    </div>
+
+    <!-- Tela da conta -->
+    <div id="conta" class="hidden">
+      <h2>Bem-vindo, <span id="userNome"></span></h2>
+      <p class="saldo">Saldo: <span id="saldo"></span> PXT</p>
+      <input type="text" id="destinatario" placeholder="Nome completo do destinatário">
+      <input type="number" id="valor" placeholder="Valor a enviar">
+      <button onclick="fazerPagamento()">Enviar</button>
+      <button onclick="sair()">Sair</button>
+      <div id="mensagem"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  let contas = JSON.parse(localStorage.getItem('contas')) || {};
+  let usuarioAtual = null;
+
+  function criarConta() {
+    const nome = document.getElementById('nome').value.trim();
+    const telefone = document.getElementById('telefone').value.trim();
+
+    if (!nome || !telefone) return alert('Preencha todos os campos.');
+
+    if (contas[nome]) return alert('Conta já existe com esse nome.');
+
+    contas[nome] = {
+      telefone: telefone,
+      saldo: 100
+    };
+    localStorage.setItem('contas', JSON.stringify(contas));
+    usuarioAtual = nome;
+    mostrarConta();
+  }
+
+  function mostrarConta() {
+    document.getElementById('cadastro').classList.add('hidden');
+    document.getElementById('conta').classList.remove('hidden');
+    document.getElementById('userNome').innerText = usuarioAtual;
+    atualizarSaldo();
+  }
+
+  function atualizarSaldo() {
+    const saldo = contas[usuarioAtual].saldo;
+    document.getElementById('saldo').innerText = saldo;
+  }
+
+  function fazerPagamento() {
+    const destinatario = document.getElementById('destinatario').value.trim();
+    const valor = parseFloat(document.getElementById('valor').value);
+    const mensagem = document.getElementById('mensagem');
+
+    if (!destinatario || isNaN(valor) || valor <= 0) {
+      mensagem.innerText = 'Preencha os campos corretamente.';
+      return;
+    }
+
+    if (!contas[destinatario]) {
+      mensagem.innerText = 'Destinatário não encontrado.';
+      return;
+    }
+
+    if (contas[usuarioAtual].saldo < valor) {
+      mensagem.innerText = 'Saldo insuficiente.';
+      return;
+    }
+
+    contas[usuarioAtual].saldo -= valor;
+    contas[destinatario].saldo += valor;
+    localStorage.setItem('contas', JSON.stringify(contas));
+    mensagem.innerText = `Você enviou ${valor} PXT para ${destinatario}`;
+    atualizarSaldo();
+  }
+
+  function sair() {
+    usuarioAtual = null;
+    document.getElementById('cadastro').classList.remove('hidden');
+    document.getElementById('conta').classList.add('hidden');
+    document.getElementById('nome').value = '';
+    document.getElementById('telefone').value = '';
+    document.getElementById('mensagem').innerText = '';
+  }
+</script>
+</body>
+</html>
